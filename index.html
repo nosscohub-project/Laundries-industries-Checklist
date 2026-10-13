@@ -307,7 +307,22 @@
             <p class="note">Track completed items by checking boxes and selecting status.</p>
         </div>
 
-        <button class="save-btn" onclick="saveChecklist()">Save Progress</button>
+        <div class="button-group">
+            <button class="save-btn" onclick="saveChecklist()">Save Progress</button>
+            <button class="save-btn" style="background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);" onclick="exportChecklist()">Export Results</button>
+            <button class="save-btn" style="background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);" onclick="window.print()">Print Report</button>
+        </div>
+        
+        <div id="exportModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:1000;">
+            <div style="background:#fff; padding:30px; border-radius:12px; max-width:600px; width:90%;">
+                <h3 style="margin-bottom:20px; color:#1a1a2e;">Export Checklist Results</h3>
+                <textarea id="exportText" style="width:100%; height:200px; padding:12px; border:1px solid #ced4da; border-radius:6px; font-family:monospace; font-size:0.9rem;"></textarea>
+                <div style="margin-top:15px; display:flex; gap:10px; justify-content:flex-end;">
+                    <button onclick="document.getElementById('exportModal').style.display='none'" style="padding:8px 16px; background:#6c757d; color:#fff; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
+                    <button onclick="downloadExport()" style="padding:8px 16px; background:#667eea; color:#fff; border:none; border-radius:4px; cursor:pointer;">Download</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -334,6 +349,45 @@
             });
             alert('Checklist saved! Progress: ' + document.getElementById('progressPercent').textContent);
             updateProgress();
+        }
+        
+        function exportChecklist() {
+            let output = "BAESHEN LAUNDRY FACILITY - SITE VISIT CHECKLIST\n";
+            output += "========================================\n\n";
+            output += "PROJECT INFO\n";
+            output += "- Client: " + (document.getElementById('clientName').value || 'N/A') + "\n";
+            output += "- Location: " + (document.getElementById('projectLocation').value || 'N/A') + "\n";
+            output += "- Date: " + (document.getElementById('inspectionDate').value || 'N/A') + "\n";
+            document.querySelectorAll('.check-table').forEach(table => {
+                const section = table.closest('.section').querySelector('.section-header').textContent.trim();
+                output += "\n" + section + "\n";
+                table.querySelectorAll('tbody tr').forEach(row => {
+                    const cb = row.querySelector('input[type=checkbox]');
+                    const sel = row.querySelector('select');
+                    if (cb && cb.checked) {
+                        const item = row.querySelector('.item-col').textContent;
+                        const status = sel ? sel.options[sel.selectedIndex].text : '';
+                        output += "  [✓] " + item + " - " + status + "\n";
+                    }
+                });
+            });
+            document.getElementById('exportText').value = output;
+            document.getElementById('exportModal').style.display = 'flex';
+        }
+        
+        function downloadExport() {
+            const text = document.getElementById('exportText').value;
+            const blob = new Blob([text], {type: 'text/plain'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'laundry-checklist-results.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            document.getElementById('exportModal').style.display = 'none';
+            alert('Results downloaded successfully!');
         }
         
         updateProgress();
